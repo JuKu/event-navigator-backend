@@ -1,2 +1,2 @@
-# event-navigator-backend
+# Event Navigator Backend
 An event navigator backend

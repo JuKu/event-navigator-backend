@@ -1,21 +1,47 @@
 package main
 
 import (
-	"fmt"
+	"github.com/JuKu/event-navigator-backend/model"
+	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 //TIP <p>To run your code, right-click the code and select <b>Run</b>.</p> <p>Alternatively, click
 // the <icon src="AllIcons.Actions.Execute"/> icon in the gutter and select the <b>Run</b> menu item from here.</p>
 
 func main() {
-	//TIP <p>Press <shortcut actionId="ShowIntentionActions"/> when your caret is at the underlined text
-	// to see how GoLand suggests fixing the warning.</p><p>Alternatively, if available, click the lightbulb to view possible fixes.</p>
-	s := "gopher"
-	fmt.Printf("Hello and welcome, %s!\n", s)
+	// for production usage (alternative: export GIN_MODE=release)
+	// gin.SetMode(gin.ReleaseMode)
 
-	for i := 1; i <= 5; i++ {
-		//TIP <p>To start your debugging session, right-click your code in the editor and select the Debug option.</p> <p>We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-		// for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.</p>
-		fmt.Println("i =", 100/i)
+	server := gin.Default()
+
+	server.GET("/events", getEvents)
+	server.POST("/events", createEvent)
+
+	err := server.Run(":8080")
+
+	if err != nil {
+		return
 	}
+}
+
+func getEvents(context *gin.Context) {
+	events := model.GetAllEvents()
+	context.JSON(http.StatusOK, events)
+}
+
+func createEvent(context *gin.Context) {
+	var event model.Event
+	err := context.ShouldBindJSON(&event)
+
+	if err != nil {
+		context.JSON(http.StatusBadRequest, gin.H{"error": "Cannot parse Event model to create", "error_details": err.Error()})
+	}
+
+	// TODO: remove this later
+	event.ID = 1
+	event.CreatorID = 1
+	event.Save()
+
+	context.JSON(http.StatusCreated, gin.H{"message": "Event created!", "event": event})
 }
