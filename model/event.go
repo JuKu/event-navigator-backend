@@ -36,6 +36,11 @@ func (e *Event) Save() error {
 
 	defer stmt.Close()
 
+	// calculate calcandar week
+	year, week := calculateGetCalendarWeekAndYear(e.DateTime)
+	e.Year = year
+	e.CalendarWeek = week
+
 	result, err := stmt.Exec(e.Title, e.Description, e.Location, e.Organizer, e.DateTime, e.CalendarWeek, e.Year, e.CreatorID)
 	if err != nil {
 		return err
@@ -86,4 +91,27 @@ func GetEventByID(eventID int64) (*Event, error) {
 	}
 
 	return &event, nil
+}
+
+func (event Event) Update() error {
+	query := `UPDATE events
+	SET title = ?, description = ?, location = ?, organizer = ?, datetime = ?, calendar_week = ?, year = ?, creator_id = ?
+    WHERE id=?`
+
+	year, week := calculateGetCalendarWeekAndYear(event.DateTime)
+
+	stmt, err := db.DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.Exec(event.Title, event.Description, event.Location, event.Organizer, event.DateTime, week, year, event.CreatorID, event.ID)
+
+	return err
+}
+
+func calculateGetCalendarWeekAndYear(timestamp time.Time) (year, week int) {
+	return timestamp.ISOWeek()
 }
