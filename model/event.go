@@ -18,7 +18,7 @@ type Event struct {
 	CalendarWeek int       `json:"calendar_week"`
 	Year         int       `json:"year"`
 	// creator
-	CreatorID int `json:"creator_id"`
+	CreatorID int64 `json:"creator_id"`
 }
 
 func (e *Event) Save() error {

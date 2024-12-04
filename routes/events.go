@@ -42,6 +42,9 @@ func createEvent(context *gin.Context) {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "Cannot parse Event model to create", "error_details": err.Error()})
 	}
 
+	userId := context.GetInt64("userId")
+	event.CreatorID = userId
+
 	err = event.Save()
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save event to database", "error_details": err.Error()})
@@ -59,10 +62,18 @@ func updateEvent(context *gin.Context) {
 		return
 	}
 
+	userId := context.GetInt64("userId")
+
 	// Check, if the event exists
-	_, err = model.GetEventByID(id)
+	event, err := model.GetEventByID(id)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not fetch event."})
+		return
+	}
+
+	// check, if the logged in user is also the creator
+	if event.CreatorID != userId {
+		context.JSON(http.StatusForbidden, gin.H{"message": "You are not authorized to edit this event."})
 		return
 	}
 
@@ -91,10 +102,18 @@ func deleteEvent(context *gin.Context) {
 		return
 	}
 
+	userId := context.GetInt64("userId")
+
 	// Check, if the event exists
 	event, err := model.GetEventByID(id)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"message": "Could not fetch event."})
+		return
+	}
+
+	// check, if the logged in user is also the creator
+	if event.CreatorID != userId {
+		context.JSON(http.StatusForbidden, gin.H{"message": "You are not authorized to delete this event."})
 		return
 	}
 
