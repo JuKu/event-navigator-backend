@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/JuKu/event-navigator-backend/db"
 	"github.com/JuKu/event-navigator-backend/model"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -10,6 +11,8 @@ import (
 // the <icon src="AllIcons.Actions.Execute"/> icon in the gutter and select the <b>Run</b> menu item from here.</p>
 
 func main() {
+	db.InitDB()
+
 	// for production usage (alternative: export GIN_MODE=release)
 	// gin.SetMode(gin.ReleaseMode)
 
