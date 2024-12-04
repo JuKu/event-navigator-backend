@@ -1,10 +1,14 @@
 package model
 
-import "time"
+import (
+	"fmt"
+	"github.com/JuKu/event-navigator-backend/db"
+	"time"
+)
 
 // Event is a struct which is returned to the client by the server
 type Event struct {
-	ID          int    `json:"id"`
+	ID          int64  `json:"id"`
 	Title       string `json:"title" binding:"required"`
 	Description string `json:"description" binding:"required"`
 	Location    string `json:"location" binding:"required"`
@@ -17,13 +21,69 @@ type Event struct {
 	CreatorID int `json:"creator_id"`
 }
 
-var events = []Event{}
+func (e *Event) Save() error {
+	query := `INSERT INTO events (
+                    title, description, location, organizer, datetime, calendar_week, year, creator_id
+		) VALUES (
+		          ?, ?, ?, ?, ?, ?, ?, ?
+		)`
 
-func (e Event) Save() {
-	// TODO: add event to database
-	events = append(events, e)
+	stmt, err := db.DB.Prepare(query)
+	if err != nil {
+		fmt.Println("Error while preparing statement", err)
+		return err
+	}
+
+	defer stmt.Close()
+
+	result, err := stmt.Exec(e.Title, e.Description, e.Location, e.Organizer, e.DateTime, e.CalendarWeek, e.Year, e.CreatorID)
+	if err != nil {
+		return err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	e.ID = id
+
+	return nil
 }
 
-func GetAllEvents() []Event {
-	return events
+func GetAllEvents() ([]Event, error) {
+	query := `SELECT * FROM events`
+	rows, err := db.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var events []Event
+
+	for rows.Next() {
+		var event Event
+		err := rows.Scan(&event.ID, &event.Title, &event.Description, &event.Location, &event.Organizer, &event.DateTime, &event.CalendarWeek, &event.Year, &event.CreatorID)
+		if err != nil {
+			return nil, err
+		}
+
+		events = append(events, event)
+	}
+
+	return events, nil
+}
+
+func GetEventByID(eventID int64) (*Event, error) {
+	query := `SELECT * FROM events WHERE id=?`
+	row := db.DB.QueryRow(query, eventID)
+
+	var event Event
+	err := row.Scan(&event.ID, &event.Title, &event.Description, &event.Location, &event.Organizer, &event.DateTime, &event.CalendarWeek, &event.Year, &event.CreatorID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &event, nil
 }
